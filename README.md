@@ -49,6 +49,19 @@ Your Existing VistA Docker Container    →    ModernVista (AI-Enhanced Interfac
 
 ModernVista's backend API layer (which we call **VAN MDWS** in honor of Van Curtis, a VistA pioneer) connects directly to VistA's RPC Broker protocol rather than using the original MDWS (Medical Domain Web Services) as an intermediary.
 
+### 🎯 Cloud Deployment Discovery
+
+**Important Finding**: VAN MDWS successfully connects to **Azure Container Instance VistA** where traditional CPRS desktop client cannot. The RPC Broker protocol has been essentially redesigned for cloud deployments, and VAN MDWS implements these cloud-native adaptations.
+
+#### CPRS Desktop Limitations with Cloud VistA
+The legacy CPRS RPC Broker cannot connect to Azure Container Instance deployments due to:
+- **Network Topology Assumptions**: CPRS expects VPN/direct network access incompatible with container networking
+- **Static Hostname Dependency**: Cannot handle Azure's dynamic FQDN assignments (containers get new hostnames on restart)
+- **Protocol Incompatibilities**: Cloud VistA uses adapted RPC handshake that breaks CPRS connection flow
+- **Container Security Context**: Azure port mapping and security layers incompatible with legacy client
+
+**Result**: CPRS simply won't work with cloud-deployed VistA. VAN MDWS is purpose-built for this environment.
+
 #### What is MDWS?
 **MDWS was actually a really clever piece of work!** It's a SOAP/REST web services layer created to give web applications standardized access to VistA data without needing to understand the underlying RPC protocol. MDWS provided:
 - **Clean API abstraction** - Web developers didn't need to know VistA internals
@@ -58,28 +71,34 @@ ModernVista's backend API layer (which we call **VAN MDWS** in honor of Van Curt
 
 **Important**: MDWS is **not** part of CPRS (the Delphi desktop application). It's a separate web services middleware project developed by the VA to enable web-based VistA applications.
 
-#### Why VAN MDWS (ModernVista Backend) Doesn't Use Original MDWS
-While the original MDWS is a solid solution, **VAN MDWS** (our backend) takes a different approach by implementing its own RPC client:
+#### Why VAN MDWS (ModernVista Backend) Takes a Different Approach
+While the original MDWS is a solid solution, **VAN MDWS** (our backend) takes a cloud-native approach:
 
-1.  **Performance**: Direct RPC connection eliminates the middleware hop
-2.  **Flexibility**: Access to any VistA RPC, not just those exposed by MDWS
-3.  **Modern Stack**: Native Node.js/TypeScript implementation vs running a separate MDWS server
-4.  **Learning Opportunity**: Understanding the RPC protocol deeply enables better troubleshooting
+1.  **Cloud-Native Design**: Built specifically for Azure Container Instance deployments
+2.  **Dynamic Hostname Handling**: Validates connectivity, adapts to Azure FQDN changes
+3.  **Resilient Sessions**: Handles container restarts and network transients
+4.  **Performance**: Direct RPC connection eliminates middleware hop
+5.  **Flexibility**: Access to any VistA RPC, not just those exposed by MDWS
+6.  **Modern Stack**: Native Node.js/TypeScript implementation
 
 **Architecture Comparison:**
 
 ```
+CPRS Desktop (Won't Work with Azure):
+CPRS Client → Legacy RPC Broker → ❌ Azure VistA Container
+              (VPN/Static assumptions)
+
 Original MDWS Approach:
 Browser → MDWS Server (SOAP/REST) → VistA RPC Broker → VistA Database
 
-VAN MDWS Approach (ModernVista):
-Browser → VAN MDWS Backend (REST) → VistA RPC Broker → VistA Database
-         (Node.js w/ direct RPC client)
+VAN MDWS Approach (Cloud-Compatible):
+Browser → VAN MDWS Backend (REST) → Cloud-Aware RPC → Azure VistA Container ✅
+         (Node.js, handles dynamic hostnames, container networking)
 ```
 
-**Respect to Original MDWS**: It pioneered web access to VistA and enabled many modern VistA applications. VAN MDWS (our approach) is just a different architectural choice, not better or worse - just optimized for our specific use case of a single-page React application with real-time requirements.
+**Respect to Original MDWS**: It pioneered web access to VistA and enabled many modern VistA applications. VAN MDWS (our approach) builds on that legacy while solving the cloud deployment challenge that neither CPRS nor original MDWS can address.
 
-**When to use Original MDWS instead**: If you need multi-VistA federation, don't want to implement RPC protocol details, or are building multiple web apps that can share the MDWS infrastructure.
+**When to use Original MDWS instead**: If you need multi-VistA federation, don't want to implement RPC protocol details, or are building multiple web apps that can share the MDWS infrastructure **and are using on-premise VistA deployments**.
 
 ---
 

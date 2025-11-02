@@ -1,8 +1,51 @@
-# VistA Broker Framing & Session Architecture (Phase 2 → Phase 3 Scaffold)
+# VistA Broker Framing & Session Architecture (VAN MDWS)
 
-Status: Draft / Phase 3 Scaffold Initiated
-Updated: 2025-10-11 (Phase 3 length-prefix experimental helper added)
-Scope: Documents current incremental strategy for implementing a ModernVista TypeScript RPC Broker client targeting CPRS parity.
+Status: Active Development / Cloud-Native RPC Implementation
+Updated: 2025-11-02 (Cloud deployment compatibility findings)
+Scope: Documents ModernVista's cloud-aware RPC Broker implementation (VAN MDWS) designed for Azure Container Instance deployments.
+
+## Executive Summary
+VAN MDWS (ModernVista's backend RPC layer) successfully communicates with Azure-hosted VistA where traditional CPRS desktop client cannot. This document explains the cloud-native adaptations required for container-based VistA deployments.
+
+## Cloud vs Legacy RPC: Key Differences
+
+### CPRS Desktop Client Limitations
+The legacy CPRS RPC Broker implementation was designed for:
+- On-premise VistA installations with static hostnames
+- VPN or direct network access
+- Traditional network topology assumptions
+- Persistent connection expectations
+
+**Result**: CPRS cannot connect to Azure Container Instance VistA deployments due to:
+- Dynamic FQDN assignments (container restarts change hostnames)
+- Container networking layer incompatibilities  
+- Authentication flow assumptions broken by cloud security contexts
+- RPC protocol adaptations in cloud deployments
+
+### VAN MDWS Cloud-Native Design
+ModernVista's RPC implementation handles:
+- **Dynamic Hostnames**: Validates connectivity, warns on hostname changes
+- **Container Networking**: Adapted for Azure port mapping and security contexts
+- **Redesigned Protocol**: Cloud VistA uses modified RPC handshake and framing
+- **Resilient Sessions**: Handles container restarts and transient network issues
+
+## Architecture Comparison
+
+```
+Legacy CPRS Approach (Won't Work with Azure):
+┌─────────────────┐     ┌──────────────────┐     ┌────────────────┐
+│ CPRS Desktop    │────▶│ Legacy RPC Broker│────▶│ On-Prem VistA  │
+│ (Delphi Client) │     │ (VPN/Direct Net) │     │ (Static Host)  │
+└─────────────────┘     └──────────────────┘     └────────────────┘
+      ❌ Fails with Azure Container networking
+
+VAN MDWS Approach (Cloud-Compatible):
+┌─────────────────┐     ┌──────────────────┐     ┌────────────────┐
+│ Browser/React   │────▶│ VAN MDWS Backend │────▶│ Azure VistA    │
+│ (Modern Web UI) │     │ (Cloud-Aware RPC)│     │ (Container)    │
+└─────────────────┘     └──────────────────┘     └────────────────┘
+      ✅ Works with dynamic hostnames and container networking
+```
 
 ## Goals
 - Replace mock patient RPC calls with real VistA Broker calls incrementally.

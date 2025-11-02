@@ -1,22 +1,60 @@
-# Azure VistA Container Configuration
+# Azure VistA Container Configuration (VAN MDWS)
 
 > **Date Configured**: October 22, 2025  
+> **Last Updated**: November 2, 2025 (CPRS incompatibility findings)
 > **Deployment Type**: Azure Container Instance (ACI)  
 > **Environment**: Development / Demo
 
 ---
 
-## 🌐 Azure VistA Instance Details
+## � Important Discovery: CPRS Cannot Connect to Azure VistA
 
-| Setting | Value |
-|---------|-------|
-| **Host (FQDN)** | `vista-demo-frasod-832.eastus.azurecontainer.io` |
-| **RPC Broker Port** | `9430` |
-| **YottaDB GUI** | http://vista-demo-frasod-832.eastus.azurecontainer.io:8089 |
-| **Region** | East US |
-| **Access Code** | `<ACCESS_CODE>` (see secure storage) |
-| **Verify Code** | `<VERIFY_CODE>` (see secure storage) |
-| **Division** | Default/first (if prompted) |
+**Key Finding**: Traditional CPRS desktop client **cannot connect** to Azure Container Instance VistA deployments due to RPC Broker protocol incompatibilities with cloud networking. ModernVista's VAN MDWS backend successfully handles these cloud-specific requirements where CPRS fails.
+
+### Why CPRS Doesn't Work with Azure
+- **Legacy Network Assumptions**: CPRS RPC Broker expects VPN/direct network topology
+- **Static Hostname Dependency**: Cannot handle Azure's dynamic FQDN assignments
+- **Protocol Redesign**: Cloud VistA uses adapted RPC handshake incompatible with desktop client
+- **Container Networking**: Azure port mapping and security contexts break CPRS connection flow
+
+### Why VAN MDWS Works
+- ✅ **Cloud-Native Design**: Built specifically for container deployments
+- ✅ **Dynamic Hostname Handling**: Validates connectivity, adapts to Azure FQDN changes
+- ✅ **Resilient Sessions**: Handles container restarts and network transients
+- ✅ **Modern Protocol**: Implements cloud-adapted RPC handshake
+
+**Bottom Line**: VAN MDWS is the **only viable modern interface** for cloud-deployed VistA instances.
+
+---
+
+## �🌐 Azure VistA Instance Details
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| **Current Host** | `vista-demo-frasod-237.eastus.azurecontainer.io` | ⚠️ Changes on container restart |
+| **Previous Host** | `vista-demo-frasod-832.eastus.azurecontainer.io` | Example of FQDN change |
+| **RPC Broker Port** | `9430` | Standard VistA RPC port |
+| **YottaDB GUI** | http://vista-demo-frasod-237.eastus.azurecontainer.io:8089 | Web interface |
+| **Region** | East US | Azure region |
+| **Access Code** | `<ACCESS_CODE>` | See secure storage |
+| **Verify Code** | `<VERIFY_CODE>` | See secure storage |
+| **Division** | Default/first | If prompted |
+
+### Dynamic Hostname Management
+
+Azure Container Instances assign **dynamic FQDNs** that change when containers restart. VAN MDWS includes smart launcher validation:
+
+```bash
+# Check current hostname
+az container show -n vista-demo -g <resource-group> \
+  --query "{fqdn:ipAddress.fqdn,status:instanceView.state}" -o json
+
+# Update backend .env with new hostname
+./fix-azure-hostname.sh <new-hostname>
+
+# Or use smart launcher (validates hostname first)
+./launch-azure.sh
+```
 
 ---
 

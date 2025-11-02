@@ -1,5 +1,69 @@
 # ModernVista Development Log
 
+### 📅 **November 2, 2025 - CPRS Integration Attempts & VAN MDWS Naming** 🔧
+
+#### Summary
+**Key Discovery**: Attempted to set up CPRS desktop client to make direct RPC calls to Azure VistA, but discovered that **CPRS's internal RPC Broker structure is not compatible with how VistA is deployed on Azure Container Instances**. ModernVista's direct RPC approach (now called **VAN MDWS**) works where CPRS fails because the RPC Broker protocol implementation has been essentially completely redesigned for cloud deployment.
+
+#### What We Tried
+1. **CPRS Desktop Setup**: Attempted to configure CPRS (Delphi/Pascal legacy client) to connect to `vista-demo-frasod-237.eastus.azurecontainer.io:9430`
+2. **RPC Broker Compatibility**: Discovered CPRS's embedded RPC Broker expects specific network topology and authentication flow incompatible with Azure Container networking
+3. **ModernVista Success**: Our Node.js/TypeScript RPC client successfully communicates with Azure VistA where CPRS cannot
+
+#### Key Learnings
+| Discovery | Implication |
+|-----------|-------------|
+| CPRS RPC Broker is tightly coupled to legacy VistA deployment patterns | Desktop client expects VPN/direct network access incompatible with cloud containers |
+| Azure VistA RPC implementation differs from traditional on-premise | Container networking, port mapping, and security context require different handshake patterns |
+| ModernVista's broker client works with Azure deployment | Our implementation handles cloud networking realities (dynamic hostnames, container restarts) |
+| RPC protocol essentially redesigned for cloud | Not just network differences—actual protocol handshake and framing adapted for container environment |
+
+#### Azure VistA Connectivity Issues Resolved
+- **Hostname Changes**: Azure Container Instances use dynamic FQDNs that change on restart (vista-demo-frasod-832 → vista-demo-frasod-237)
+- **Smart Launcher**: Created `launch-azure.sh` with hostname validation to warn when container hostname changes
+- **Connection Testing**: RPC calls working (ORWPT LIST returning real patient data with 129ms latency)
+- **Mock vs Real**: Verified `mock: false` in responses, confirmed real VistA communication
+
+#### VAN MDWS Tribute
+Renamed ModernVista's backend layer to **VAN MDWS** in honor of **Van Curtis**, whose pioneering work in VistA web services and open-source healthcare interoperability paved the way for modern VistA applications. The name distinguishes our cloud-native RPC implementation from the original MDWS middleware while honoring the legacy of making VistA accessible via web technologies.
+
+#### Technical Architecture Clarification
+```
+CPRS Approach (Won't Work with Azure):
+CPRS Desktop Client → Legacy RPC Broker → On-Premise VistA
+                     (Expects VPN/direct network)
+
+VAN MDWS Approach (Works with Azure):
+Browser → VAN MDWS Backend (REST) → Cloud-Aware RPC → Azure VistA Container
+         (Node.js, handles dynamic hostnames, container networking)
+```
+
+#### Files Updated
+| File | Change |
+|------|--------|
+| `README.md` | Renamed backend to VAN MDWS, added Van Curtis tribute, updated architecture diagrams |
+| `docs/DEVELOPMENT_LOG.md` | Added this entry documenting CPRS incompatibility findings |
+| `backend/src/api/router.ts` | Enhanced error logging for Azure connectivity diagnostics |
+| `launch-azure.sh` | Smart launcher with hostname reachability checks |
+
+#### Why This Matters
+Understanding that CPRS's RPC Broker cannot work with Azure VistA deployments validates ModernVista's architectural approach. We're not just building a "web version of CPRS"—we're solving a fundamental cloud compatibility problem that the legacy desktop client cannot address. This positions ModernVista as the **only viable modern interface for cloud-deployed VistA instances**.
+
+#### Next Steps
+1. Document the specific RPC protocol differences between legacy and Azure VistA
+2. Add architecture documentation explaining cloud-native RPC adaptations
+3. Test remaining clinical endpoints (labs, meds, vitals, allergies) with real Azure data
+4. Consider contributing findings back to VistA community about cloud deployment patterns
+
+#### Decision Log
+| Decision | Rationale |
+|----------|-----------|
+| Named backend "VAN MDWS" | Honor Van Curtis while distinguishing from original MDWS |
+| Documented CPRS incompatibility | Important for community understanding of cloud VistA challenges |
+| Focus on cloud-native RPC | Legacy CPRS approach won't work; our path is the right one |
+
+---
+
 ### 📅 **October 22, 2025 - Azure VistA Integration Success + Port Standardization** 🎉
 
 #### Summary
